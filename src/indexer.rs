@@ -1,6 +1,9 @@
 use crate::schema::get as get_table;
 use crate::storage::writer::ClickhouseWriter as DbWriter;
 use crate::processors::uni_v4_pools::process_uni_v4_pools;
+use crate::processors::uni_v4_swaps::process_uni_v4_swaps;
+use crate::processors::uni_v4_modify_liquidity::process_uni_v4_modify_liquidity;
+use crate::processors::uni_v4_donations::process_uni_v4_donations;
 use alloy_rpc_types::{BlockId, BlockNumberOrTag};
 use alloy_rpc_types_trace::parity::{TraceResultsWithTransactionHash, TraceType};
 use eyre::Result;
@@ -73,6 +76,9 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
         };
 
         indexer.add_processor("uni_v4_pools", "UniV4Pools");
+        indexer.add_processor("uni_v4_swaps", "UniV4Swaps");
+        indexer.add_processor("uni_v4_modify_liquidity", "UniV4ModifyLiquidity");
+        indexer.add_processor("uni_v4_donations", "UniV4Donations");
 
         info!("Initialized indexer with processors: {:?}", indexer.list_processors());
         indexer
@@ -89,6 +95,21 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
                 table_name,
                 processor_name,
                 |block_data, components, writer| Box::pin(process_uni_v4_pools::<Node, EthApi>(block_data, components, writer))
+            ),
+            "uni_v4_swaps" => ProcessorInfo::new(
+                table_name,
+                processor_name,
+                |block_data, components, writer| Box::pin(process_uni_v4_swaps::<Node, EthApi>(block_data, components, writer))
+            ),
+            "uni_v4_modify_liquidity" => ProcessorInfo::new(
+                table_name,
+                processor_name,
+                |block_data, components, writer| Box::pin(process_uni_v4_modify_liquidity::<Node, EthApi>(block_data, components, writer))
+            ),
+            "uni_v4_donations" => ProcessorInfo::new(
+                table_name,
+                processor_name,
+                |block_data, components, writer| Box::pin(process_uni_v4_donations::<Node, EthApi>(block_data, components, writer))
             ),
             _ => return,
         };

@@ -1,0 +1,66 @@
+use crate::values;
+use crate::indexer::{ProcessingComponents, EthereumBlockData};
+use crate::storage::writer::ClickhouseWriter as DbWriter;
+use alloy::{sol, sol_types::SolEvent, primitives::{address, Address}};
+use reth_node_api::FullNodeComponents;
+use eyre::Result;
+use chrono::Utc;
+use reth_rpc_eth_api::helpers::FullEthApi;
+use tracing::debug;
+
+const UNIV4_FACTORY_CONTRACT_ADDRESS: Address = address!("0x000000000004444c5dc75cB358380D2e3dE08A90");
+
+sol! {
+    event Swap(
+        bytes32 indexed id,
+        address indexed sender,
+        int128 amount0,
+        int128 amount1,
+        uint160 sqrtPriceX96,
+        uint128 liquidity,
+        int24 tick,
+        uint24 fee
+    );
+}
+
+pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
+    block_data: &EthereumBlockData,
+    _components: ProcessingComponents<Node, EthApi>,
+    writer: &mut DbWriter,
+) -> Result<()> {
+    let block = &block_data.0;
+    let receipts = &block_data.1;
+    let block_number = block.num_hash().number;
+
+    for (tx_idx, (tx, receipt)) in block.body().transactions.iter().zip(receipts.iter()).enumerate() {
+        for (log_idx, log) in receipt.logs.iter().enumerate() {
+            if log.address != UNIV4_FACTORY_CONTRACT_ADDRESS { continue; }
+            if log.topics().get(0) != Some(&Swap::SIGNATURE_HASH) { continue; }
+
+            match Swap::decode_raw_log(log.topics(), &log.data.data) {
+                Ok(evt) => {
+                    writer.write_record(values![
+                        block_number as i64,
+                        tx.hash(),
+                        tx_idx as i64,
+                        log_idx as i64,
+                        log.address,
+                        evt.id,
+                        evt.sender,
+                        evt.amount0,
+                        evt.amount1,
+                        evt.sqrtPriceX96,
+                        evt.liquidity,
+                        evt.tick,
+                        evt.fee,
+                        Utc::now(),
+                    ]).await?;
+                }
+                Err(e) => { debug!("Failed to decode univ4 swap event: {:?}", e); }
+            }
+        }
+    }
+
+    Ok(())
+}
+

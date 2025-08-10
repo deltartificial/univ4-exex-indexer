@@ -92,92 +92,9 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                 continue;
             }
 
-            if log.topics().get(0) == Some(&ModifyLiquidity::SIGNATURE_HASH) {
-                match ModifyLiquidity::decode_raw_log(log.topics(), &log.data.data) {
-                    Ok(evt) => {
-                        if mods_writer.is_none() {
-                            let table = get_table("uni_v4_modify_liquidity").expect("table");
-                            mods_writer = Some(DbWriter::new(&components.client, table).await?);
-                        }
-                        if let Some(w) = mods_writer.as_mut() {
-                            w.write_record(values![
-                                block_number as i64,
-                                tx.hash(),
-                                tx_idx as i64,
-                                log_idx as i64,
-                                log.address,
-                                evt.id,
-                                evt.sender,
-                                evt.tickLower,
-                                evt.tickUpper,
-                                evt.liquidityDelta,
-                                evt.salt,
-                                Utc::now(),
-                            ]).await?;
-                        }
-                    }
-                    Err(e) => { debug!("Failed to decode univ4 modify liquidity event: {:?}", e); }
-                }
-                continue;
-            }
-
-            if log.topics().get(0) == Some(&Swap::SIGNATURE_HASH) {
-                match Swap::decode_raw_log(log.topics(), &log.data.data) {
-                    Ok(evt) => {
-                        if swaps_writer.is_none() {
-                            let table = get_table("uni_v4_swaps").expect("table");
-                            swaps_writer = Some(DbWriter::new(&components.client, table).await?);
-                        }
-                        if let Some(w) = swaps_writer.as_mut() {
-                            w.write_record(values![
-                                block_number as i64,
-                                tx.hash(),
-                                tx_idx as i64,
-                                log_idx as i64,
-                                log.address,
-                                evt.id,
-                                evt.sender,
-                                evt.amount0,
-                                evt.amount1,
-                                evt.sqrtPriceX96,
-                                evt.liquidity,
-                                evt.tick,
-                                evt.fee,
-                                Utc::now(),
-                            ]).await?;
-                        }
-                    }
-                    Err(e) => { debug!("Failed to decode univ4 swap event: {:?}", e); }
-                }
-                continue;
-            }
-
-            if log.topics().get(0) == Some(&Donate::SIGNATURE_HASH) {
-                match Donate::decode_raw_log(log.topics(), &log.data.data) {
-                    Ok(evt) => {
-                        if donate_writer.is_none() {
-                            let table = get_table("uni_v4_donations").expect("table");
-                            donate_writer = Some(DbWriter::new(&components.client, table).await?);
-                        }
-                        if let Some(w) = donate_writer.as_mut() {
-                            w.write_record(values![
-                                block_number as i64,
-                                tx.hash(),
-                                tx_idx as i64,
-                                log_idx as i64,
-                                log.address,
-                                evt.id,
-                                evt.sender,
-                                evt.amount0,
-                                evt.amount1,
-                                Utc::now(),
-                            ]).await?;
-                        }
-                    }
-                    Err(e) => { debug!("Failed to decode univ4 donate event: {:?}", e); }
-                }
-                continue;
-            }
+            if log.topics().get(0) == Some(&ModifyLiquidity::SIGNATURE_HASH) { continue; }
+            if log.topics().get(0) == Some(&Swap::SIGNATURE_HASH) { continue; }
+            if log.topics().get(0) == Some(&Donate::SIGNATURE_HASH) { continue; }
         }
     }
 
