@@ -233,7 +233,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
                 .collect();
 
             info!(
-                "exex{{id=\"exex-indexer\"}}: Block {} processed - Events: [{}], Total records: {}",
+                "exex{{id=\"univ4-exex-indexer\"}}: Block {} processed - Events: [{}], Total records: {}",
                 block_number,
                 events_summary.join(", "),
                 total_records,
@@ -247,7 +247,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
                 .collect();
 
             warn!(
-                "exex{{id=\"exex-indexer\"}}: Block {} failures - {}",
+                "exex{{id=\"univ4-exex-indexer\"}}: Block {} failures - {}",
                 block_number,
                 failure_summary.join(", ")
             );
