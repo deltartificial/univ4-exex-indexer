@@ -1,6 +1,6 @@
 ### univ4-exex-indexer
 
-High‑performance Reth ExEx indexer that streams Uniswap v4 pool Initialize events into ClickHouse.
+High‑performance Reth ExEx indexer that streams Uniswap v4 `Initialize`, `Swap`, `ModifyLiquidity`, and `Donate` events into ClickHouse.
 
 ### Quick start
 
