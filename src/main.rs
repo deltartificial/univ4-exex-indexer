@@ -3,7 +3,7 @@ mod indexer;
 mod uni_v4_pools;
 mod table_definitions;
 mod db_writer;
-use utils::{connect_to_postgres, create_tables};
+use utils::{connect_to_clickhouse, create_tables};
 use indexer::{Indexer, EthereumBlockData};
 use eyre::Result;
 use futures::{TryStreamExt};
@@ -25,7 +25,7 @@ use reth_rpc_convert::RpcTypes;
 use alloy_network::{Network, TransactionBuilder};
 use reth_tracing::tracing::{info, warn};
 use std::sync::Arc;
-use tokio_postgres::Client;
+use clickhouse::Client;
 use tokio::sync::oneshot;
 
 async fn indexer_exex<Node, EthApi>(
@@ -88,7 +88,7 @@ where
 fn main() -> Result<()> {
     Cli::parse_args().run(|builder, _| {
         Box::pin(async move {
-            let client = Arc::new(connect_to_postgres().await?);
+            let client = Arc::new(connect_to_clickhouse().await?);
             create_tables(&client).await?;
 
             let indexer = Indexer::new();

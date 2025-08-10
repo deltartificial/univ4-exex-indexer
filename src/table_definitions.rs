@@ -1,5 +1,4 @@
 use lazy_static::lazy_static;
-use tokio_postgres::types::Type;
 
 #[derive(Debug, Clone)]
 pub struct TableDefinition {
@@ -16,51 +15,62 @@ pub struct ColumnDefinition {
     pub primary_key: bool,
 }
 
-impl ColumnDefinition {
-    pub fn get_postgres_type(&self) -> Type {
-        match self.sql_type {
-            "BIGINT" => Type::INT8,
-            "INTEGER" => Type::INT4,
-            "SMALLINT" => Type::INT2,
-            "TEXT" | "VARCHAR" => Type::TEXT,
-            "BOOLEAN" => Type::BOOL,
-            "DOUBLE PRECISION" => Type::FLOAT8,
-            "REAL" => Type::FLOAT4,
-            "TIMESTAMP WITH TIME ZONE" => Type::TIMESTAMPTZ,
-            "TIMESTAMP" => Type::TIMESTAMP,
-            "DATE" => Type::DATE,
-            "BYTEA" => Type::BYTEA,
-            "JSON" => Type::JSON,
-            "JSONB" => Type::JSONB,
-            _ => Type::TEXT,
-        }
-    }
-}
+
 
 impl TableDefinition {
     pub fn create_table_sql(&self) -> String {
         let columns: Vec<String> = self.columns
             .iter()
             .map(|col| {
-                let nullable = if col.nullable { "" } else { " NOT NULL" };
-                let pk = if col.primary_key { " PRIMARY KEY" } else { "" };
-                format!("{} {}{}{}", col.name, col.sql_type, nullable, pk)
+                let clickhouse_type = match col.sql_type {
+                    "BIGINT" => "Int64",
+                    "INTEGER" => "Int32", 
+                    "SMALLINT" => "Int16",
+                    "TEXT" | "VARCHAR" => "String",
+                    "BOOLEAN" => "Bool",
+                    "DOUBLE PRECISION" => "Float64",
+                    "REAL" => "Float32",
+                    "TIMESTAMP WITH TIME ZONE" | "TIMESTAMP" => "DateTime",
+                    "DATE" => "Date",
+                    _ => "String",
+                };
+                
+                let nullable = if col.nullable { 
+                    format!("Nullable({})", clickhouse_type)
+                } else { 
+                    clickhouse_type.to_string() 
+                };
+                
+                format!("{} {}", col.name, nullable)
             })
             .collect();
 
+        let primary_key_cols: Vec<String> = self.columns
+            .iter()
+            .filter(|col| col.primary_key)
+            .map(|col| col.name.to_string())
+            .collect();
+
+        let engine = if primary_key_cols.is_empty() {
+            "ENGINE = MergeTree() ORDER BY block_number".to_string()
+        } else {
+            format!("ENGINE = MergeTree() ORDER BY ({})", primary_key_cols.join(", "))
+        };
+
         format!(
-            "CREATE TABLE IF NOT EXISTS {} (\n    {}\n)",
+            "CREATE TABLE IF NOT EXISTS {} (\n    {}\n) {}",
             self.name,
-            columns.join(",\n    ")
+            columns.join(",\n    "),
+            engine
         )
     }
 
     pub fn create_index_statements(&self) -> Vec<String> {
-        self.indexes.iter().map(|idx| idx.to_string()).collect()
+        vec![]
     }
 
     pub fn revert_statement(&self) -> String {
-        format!("DELETE FROM {} WHERE block_number = ANY($1::bigint[])", self.name)
+        format!("ALTER TABLE {} DELETE WHERE block_number IN ({{}})", self.name)
     }
 }
 
@@ -154,9 +164,7 @@ pub fn get_table_definitions() -> Vec<TableDefinition> {
                     primary_key: false,
                 },
             ],
-            indexes: vec![
-                "CREATE INDEX IF NOT EXISTS idx_uni_v4_pools_pool_id ON uni_v4_pools (pool_id)",
-            ],
+            indexes: vec![],
         },
     ]
 }

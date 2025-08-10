@@ -15,7 +15,7 @@ use reth_primitives::{RecoveredBlock, Block, Receipt};
 use reth_tracing::tracing::{info, warn};
 use std::{sync::Arc, time::Instant, collections::HashSet};
 use reth_rpc::TraceApi;
-use tokio_postgres::Client;
+use clickhouse::Client;
 
 pub type EthereumBlock = RecoveredBlock<Block>;
 pub type EthereumReceipts = Vec<Receipt>;

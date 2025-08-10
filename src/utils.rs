@@ -1,30 +1,28 @@
 use crate::table_definitions::TABLES;
 use reth_tracing::tracing::info;
 use std::env;
-use tokio_postgres::{Client, NoTls};
+use clickhouse::Client;
 
 
 
-pub async fn connect_to_postgres() -> eyre::Result<Client> {
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let (client, connection) = tokio_postgres::connect(&db_url, NoTls).await?;
-
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("Connection error: {}", e);
-        }
-    });
-
+pub async fn connect_to_clickhouse() -> eyre::Result<Client> {
+    let database_url = env::var("CLICKHOUSE_URL").unwrap_or_else(|_| "http://localhost:8123".to_string());
+    let database_name = env::var("CLICKHOUSE_DATABASE").unwrap_or_else(|_| "default".to_string());
+    
+    let client = Client::default()
+        .with_url(database_url)
+        .with_database(database_name);
+    
     Ok(client)
 }
 
 pub async fn create_tables(client: &Client) -> eyre::Result<()> {
     for table in TABLES.iter() {
         let create_table_sql = table.create_table_sql();
-        client.execute(&create_table_sql, &[]).await?;
+        client.query(&create_table_sql).execute().await?;
 
         for index_sql in table.create_index_statements() {
-            client.execute(&index_sql, &[]).await?;
+            client.query(&index_sql).execute().await?;
         }
     }
 
