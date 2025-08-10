@@ -51,11 +51,11 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                             create.id,
                             create.currency0,
                             create.currency1,
-                            create.fee.to_string(),
-                            create.tickSpacing.to_string(),
+                            create.fee,
+                            create.tickSpacing,
                             create.hooks,
-                            create.sqrtPriceX96.to_string(),
-                            create.tick.to_string(),
+                            create.sqrtPriceX96,
+                            create.tick,
                             Utc::now(),
                         ])
                         .await?;

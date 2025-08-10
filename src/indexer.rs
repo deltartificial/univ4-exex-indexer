@@ -127,6 +127,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
         <EthApi as EthApiTypes>::NetworkTypes: RpcTypes + Network,
         <<EthApi as EthApiTypes>::NetworkTypes as RpcTypes>::TransactionRequest: Default + TransactionBuilder<<EthApi as EthApiTypes>::NetworkTypes>,
     {
+        let eth_api_arc = Arc::new(eth_api.clone());
         for (block, receipts) in blocks_and_receipts {
             let block_number = block.num_hash().number;
             let block_id = BlockId::Number(BlockNumberOrTag::from(block_number));
@@ -143,7 +144,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
             };
 
             let components = ProcessingComponents {
-                eth_api: Arc::new(eth_api.clone()),
+                eth_api: Arc::clone(&eth_api_arc),
                 block_traces,
                 provider: provider.clone(),
                 client: Arc::clone(client),
@@ -170,13 +171,14 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
         <<EthApi as EthApiTypes>::NetworkTypes as RpcTypes>::TransactionRequest: Default + TransactionBuilder<<EthApi as EthApiTypes>::NetworkTypes>,
     {
         let block_number = block_data.0.num_hash().number;
+        let shared_block_data = std::sync::Arc::new(block_data.clone());
 
-        let mut tasks = Vec::new();
+        let mut tasks = Vec::with_capacity(self.processors.len());
 
         for processor in &self.processors {
             let processor_name = processor.processor_name;
             let processor_fn = processor.processor;
-            let block_data = block_data.clone();
+            let block_data = std::sync::Arc::clone(&shared_block_data);
             let components = components.clone();
             let table = get_table(processor.table_name)
                 .expect(&format!("Table definition not found for {}", processor.table_name));
@@ -201,9 +203,9 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
             tasks.push(task);
         }
 
-        let mut total_records = 0;
-        let mut event_results = Vec::new();
-        let mut failed_events = Vec::new();
+        let mut total_records = 0usize;
+        let mut event_results: Vec<(&str, usize, std::time::Duration)> = Vec::with_capacity(tasks.len());
+        let mut failed_events: Vec<(&str, String)> = Vec::new();
 
         for task in tasks {
             match task.await {
@@ -220,7 +222,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
             }
         }
 
-        event_results.sort_by(|a, b| a.0.cmp(&b.0));
+        event_results.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
         if !event_results.is_empty() {
             let events_summary: Vec<String> = event_results

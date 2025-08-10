@@ -97,7 +97,7 @@ fn main() -> Result<()> {
             let (rpc_handle_tx, rpc_handle_rx) = oneshot::channel();
             let handle = builder
                 .node(EthereumNode::default())
-                .install_exex("exex-indexer", async move |ctx| {
+                .install_exex("univ4-exex-indexer", async move |ctx| {
                     Ok(indexer_exex(ctx, rpc_handle_rx, client, indexer))
                 })
                 .launch()

@@ -12,7 +12,8 @@ pub async fn init_tables(client: &Client) -> eyre::Result<()> {
         let create_table_sql = table.create_table_sql();
         client.query(&create_table_sql).execute().await?;
 
-        for index_sql in table.create_index_statements() {
+        let index_statements = table.create_index_statements();
+        for index_sql in index_statements {
             client.query(&index_sql).execute().await?;
         }
     }

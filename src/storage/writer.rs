@@ -11,9 +11,10 @@ pub struct ClickhouseWriter {
 
 impl ClickhouseWriter {
     pub async fn new(client: &Arc<Client>, table: Table) -> Result<Self> {
-        Ok(Self { client: Arc::clone(client), table, records: Vec::new() })
+        Ok(Self { client: Arc::clone(client), table, records: Vec::with_capacity(256) })
     }
 
+    #[inline]
     pub async fn write_record(&mut self, record: Vec<String>) -> Result<()> {
         self.records.push(record);
         Ok(())
@@ -29,7 +30,11 @@ impl ClickhouseWriter {
     }
 
     pub async fn revert(&self, block_numbers: &[i64]) -> Result<()> {
-        let block_list = block_numbers.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ");
+        let mut block_list = String::with_capacity(block_numbers.len().saturating_mul(12).max(32));
+        for (i, n) in block_numbers.iter().enumerate() {
+            if i > 0 { block_list.push_str(", "); }
+            block_list.push_str(&n.to_string());
+        }
         let delete_stmt = self.table.revert_statement().replace("{}", &block_list);
         self.client.query(&delete_stmt).execute().await?;
         Ok(())

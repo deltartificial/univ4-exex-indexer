@@ -15,9 +15,8 @@ pub struct Column {
 
 impl Table {
     pub fn create_table_sql(&self) -> String {
-        let columns: Vec<String> = self.columns
-            .iter()
-            .map(|col| {
+        let mut columns: Vec<String> = Vec::with_capacity(self.columns.len());
+        for col in &self.columns {
                 let clickhouse_type = match col.sql_type {
                     "BIGINT" => "Int64",
                     "INTEGER" => "Int32",
@@ -31,15 +30,13 @@ impl Table {
                     _ => "String",
                 };
                 let nullable = if col.nullable { format!("Nullable({})", clickhouse_type) } else { clickhouse_type.to_string() };
-                format!("{} {}", col.name, nullable)
-            })
-            .collect();
+                columns.push(format!("{} {}", col.name, nullable));
+        }
 
-        let primary_key_cols: Vec<String> = self.columns
-            .iter()
-            .filter(|col| col.primary_key)
-            .map(|col| col.name.to_string())
-            .collect();
+        let mut primary_key_cols: Vec<String> = Vec::with_capacity(self.columns.len());
+        for col in &self.columns {
+            if col.primary_key { primary_key_cols.push(col.name.to_string()); }
+        }
 
         let engine = if primary_key_cols.is_empty() {
             "ENGINE = MergeTree() ORDER BY block_number".to_string()

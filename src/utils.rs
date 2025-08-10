@@ -1,8 +1,6 @@
 use std::env;
 use clickhouse::Client;
 
-
-
 pub async fn connect_to_clickhouse() -> eyre::Result<Client> {
     let database_url = env::var("CLICKHOUSE_URL").unwrap_or_else(|_| "http://localhost:8123".to_string());
     let database_name = env::var("CLICKHOUSE_DATABASE").unwrap_or_else(|_| "default".to_string());
@@ -13,5 +11,3 @@ pub async fn connect_to_clickhouse() -> eyre::Result<Client> {
     
     Ok(client)
 }
-
-// no table creation here; handled in storage::init_tables
