@@ -1,9 +1,9 @@
 use crate::schema::get as get_table;
 use crate::storage::writer::ClickhouseWriter as DbWriter;
-use crate::processors::uni_v4_pools::process_uni_v4_pools;
-use crate::processors::uni_v4_swaps::process_uni_v4_swaps;
-use crate::processors::uni_v4_modify_liquidity::process_uni_v4_modify_liquidity;
-use crate::processors::uni_v4_donations::process_uni_v4_donations;
+use crate::processors::pools::process_uni_v4_pools;
+use crate::processors::swaps::process_uni_v4_swaps;
+use crate::processors::modify_liquidity::process_uni_v4_modify_liquidity;
+use crate::processors::donations::process_uni_v4_donations;
 use alloy_rpc_types::{BlockId, BlockNumberOrTag};
 use alloy_rpc_types_trace::parity::{TraceResultsWithTransactionHash, TraceType};
 use eyre::Result;
@@ -75,10 +75,10 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
             processors: Vec::new(),
         };
 
-        indexer.add_processor("uni_v4_pools", "UniV4Pools");
-        indexer.add_processor("uni_v4_swaps", "UniV4Swaps");
-        indexer.add_processor("uni_v4_modify_liquidity", "UniV4ModifyLiquidity");
-        indexer.add_processor("uni_v4_donations", "UniV4Donations");
+        indexer.add_processor("uni_v4_pools", "Pools");
+        indexer.add_processor("uni_v4_swaps", "Swaps");
+        indexer.add_processor("uni_v4_modify_liquidity", "ModifyLiquidity");
+        indexer.add_processor("uni_v4_donations", "Donations");
 
         info!("Initialized indexer with processors: {:?}", indexer.list_processors());
         indexer
