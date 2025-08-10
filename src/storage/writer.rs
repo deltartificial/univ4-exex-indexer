@@ -47,6 +47,8 @@ impl IntoClickhouseValue for String { fn into_ch_value(&self) -> String { self.c
 impl IntoClickhouseValue for &str { fn into_ch_value(&self) -> String { self.to_string() } }
 impl IntoClickhouseValue for i64 { fn into_ch_value(&self) -> String { self.to_string() } }
 impl IntoClickhouseValue for i32 { fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for i128 { fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for u128 { fn into_ch_value(&self) -> String { self.to_string() } }
 impl IntoClickhouseValue for bool { fn into_ch_value(&self) -> String { if *self { "1" } else { "0" }.to_string() } }
 impl IntoClickhouseValue for chrono::DateTime<chrono::Utc> { fn into_ch_value(&self) -> String { self.format("%Y-%m-%d %H:%M:%S").to_string() } }
 impl IntoClickhouseValue for primitive_types::H256 { fn into_ch_value(&self) -> String { self.to_string() } }
