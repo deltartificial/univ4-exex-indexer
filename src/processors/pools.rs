@@ -1,7 +1,6 @@
 use crate::values;
 use crate::indexer::{ProcessingComponents, EthereumBlockData};
 use crate::storage::writer::ClickhouseWriter as DbWriter;
-use crate::schema::get as get_table;
 use alloy::{sol, sol_types::SolEvent, primitives::{address, Address}};
 use reth_node_api::FullNodeComponents;
 use eyre::Result;
@@ -50,16 +49,14 @@ sol! {
 
 pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
     block_data: &EthereumBlockData,
-    components: ProcessingComponents<Node, EthApi>,
+    _components: ProcessingComponents<Node, EthApi>,
     writer: &mut DbWriter,
 ) -> Result<()> {
     let block = &block_data.0;
     let receipts = &block_data.1;
     let block_number = block.num_hash().number;
 
-    let mut swaps_writer: Option<DbWriter> = None;
-    let mut mods_writer: Option<DbWriter> = None;
-    let mut donate_writer: Option<DbWriter> = None;
+    let now = Utc::now();
 
     for (tx_idx, (tx, receipt)) in block.body().transactions.iter().zip(receipts.iter()).enumerate() {
         for (log_idx, log) in receipt.logs.iter().enumerate() {
@@ -83,9 +80,8 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                                 create.hooks,
                                 create.sqrtPriceX96,
                                 create.tick,
-                                Utc::now(),
-                            ])
-                            .await?;
+                                now,
+                            ]);
                     }
                     Err(e) => { debug!("Failed to decode univ4 pool creation event: {:?}", e); }
                 }
@@ -97,10 +93,6 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
             if log.topics().get(0) == Some(&Donate::SIGNATURE_HASH) { continue; }
         }
     }
-
-    if let Some(w) = swaps_writer { let _ = w.finish().await?; }
-    if let Some(w) = mods_writer { let _ = w.finish().await?; }
-    if let Some(w) = donate_writer { let _ = w.finish().await?; }
 
     Ok(())
 }

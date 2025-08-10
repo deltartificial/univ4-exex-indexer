@@ -32,6 +32,7 @@ pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
     let receipts = &block_data.1;
     let block_number = block.num_hash().number;
 
+    let now = Utc::now();
     for (tx_idx, (tx, receipt)) in block.body().transactions.iter().zip(receipts.iter()).enumerate() {
         for (log_idx, log) in receipt.logs.iter().enumerate() {
             if log.address != UNIV4_FACTORY_CONTRACT_ADDRESS { continue; }
@@ -53,8 +54,8 @@ pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
                         evt.liquidity,
                         evt.tick,
                         evt.fee,
-                        Utc::now(),
-                    ]).await?;
+                        now,
+                    ]);
                 }
                 Err(e) => { debug!("Failed to decode univ4 swap event: {:?}", e); }
             }

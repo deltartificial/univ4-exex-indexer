@@ -10,14 +10,13 @@ pub struct ClickhouseWriter {
 }
 
 impl ClickhouseWriter {
-    pub async fn new(client: &Arc<Client>, table: Table) -> Result<Self> {
-        Ok(Self { client: Arc::clone(client), table, records: Vec::with_capacity(256) })
+    pub fn new(client: &Arc<Client>, table: Table) -> Result<Self> {
+        Ok(Self { client: Arc::clone(client), table, records: Vec::with_capacity(1024) })
     }
 
     #[inline]
-    pub async fn write_record(&mut self, record: Vec<String>) -> Result<()> {
+    pub fn write_record(&mut self, record: Vec<String>) {
         self.records.push(record);
-        Ok(())
     }
 
     pub async fn finish(self) -> Result<usize> {
@@ -43,23 +42,23 @@ impl ClickhouseWriter {
 
 pub trait IntoClickhouseValue { fn into_ch_value(&self) -> String; }
 
-impl IntoClickhouseValue for String { fn into_ch_value(&self) -> String { self.clone() } }
-impl IntoClickhouseValue for &str { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for i64 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for i32 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for i128 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for u128 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for bool { fn into_ch_value(&self) -> String { if *self { "1" } else { "0" }.to_string() } }
-impl IntoClickhouseValue for chrono::DateTime<chrono::Utc> { fn into_ch_value(&self) -> String { self.format("%Y-%m-%d %H:%M:%S").to_string() } }
-impl IntoClickhouseValue for primitive_types::H256 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for primitive_types::U256 { fn into_ch_value(&self) -> String { self.to_string() } }
-impl IntoClickhouseValue for alloy::primitives::Address { fn into_ch_value(&self) -> String { self.to_checksum(Some(1)) } }
-impl IntoClickhouseValue for alloy::primitives::FixedBytes<32> { fn into_ch_value(&self) -> String { self.to_string() } }
-impl<const BITS: usize, const LIMBS: usize> IntoClickhouseValue for alloy::primitives::Uint<BITS, LIMBS> { fn into_ch_value(&self) -> String { self.to_string() } }
-impl<const BITS: usize, const LIMBS: usize> IntoClickhouseValue for alloy::primitives::Signed<BITS, LIMBS> { fn into_ch_value(&self) -> String { self.to_string() } }
-impl<T: IntoClickhouseValue + ?Sized> IntoClickhouseValue for &T { fn into_ch_value(&self) -> String { (*self).into_ch_value() } }
-impl IntoClickhouseValue for Vec<u8> { fn into_ch_value(&self) -> String { alloy::primitives::hex::encode_prefixed(self) } }
-impl IntoClickhouseValue for [u8] { fn into_ch_value(&self) -> String { alloy::primitives::hex::encode_prefixed(self) } }
+impl IntoClickhouseValue for String { #[inline] fn into_ch_value(&self) -> String { self.clone() } }
+impl IntoClickhouseValue for &str { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for i64 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for i32 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for i128 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for u128 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for bool { #[inline] fn into_ch_value(&self) -> String { if *self { "1" } else { "0" }.to_string() } }
+impl IntoClickhouseValue for chrono::DateTime<chrono::Utc> { #[inline] fn into_ch_value(&self) -> String { self.format("%Y-%m-%d %H:%M:%S").to_string() } }
+impl IntoClickhouseValue for primitive_types::H256 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for primitive_types::U256 { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl IntoClickhouseValue for alloy::primitives::Address { #[inline] fn into_ch_value(&self) -> String { self.to_checksum(Some(1)) } }
+impl IntoClickhouseValue for alloy::primitives::FixedBytes<32> { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl<const BITS: usize, const LIMBS: usize> IntoClickhouseValue for alloy::primitives::Uint<BITS, LIMBS> { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl<const BITS: usize, const LIMBS: usize> IntoClickhouseValue for alloy::primitives::Signed<BITS, LIMBS> { #[inline] fn into_ch_value(&self) -> String { self.to_string() } }
+impl<T: IntoClickhouseValue + ?Sized> IntoClickhouseValue for &T { #[inline] fn into_ch_value(&self) -> String { (*self).into_ch_value() } }
+impl IntoClickhouseValue for Vec<u8> { #[inline] fn into_ch_value(&self) -> String { alloy::primitives::hex::encode_prefixed(self) } }
+impl IntoClickhouseValue for [u8] { #[inline] fn into_ch_value(&self) -> String { alloy::primitives::hex::encode_prefixed(self) } }
 
 #[macro_export]
 macro_rules! values {

@@ -10622,6 +10622,7 @@ dependencies = [
  "reth-tracing",
  "serde",
  "serde_json",
+ "tikv-jemallocator",
  "time",
  "tokio",
  "tracing",

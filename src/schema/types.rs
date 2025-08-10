@@ -38,11 +38,16 @@ impl Table {
             if col.primary_key { primary_key_cols.push(col.name.to_string()); }
         }
 
-        let engine = if primary_key_cols.is_empty() {
-            "ENGINE = MergeTree() ORDER BY block_number".to_string()
+        let order_by = if primary_key_cols.is_empty() {
+            "block_number".to_string()
         } else {
-            format!("ENGINE = MergeTree() ORDER BY ({})", primary_key_cols.join(", "))
+            primary_key_cols.join(", ")
         };
+
+        let engine = format!(
+            "ENGINE = MergeTree() ORDER BY ({}) SETTINGS index_granularity = 8192, compress = 'LZ4'",
+            order_by
+        );
 
         format!(
             "CREATE TABLE IF NOT EXISTS {} (\n    {}\n) {}",

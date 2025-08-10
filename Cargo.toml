@@ -42,3 +42,22 @@ clickhouse = { version = "0.12", features = ["time", "uuid"] }
 tracing = ">=0.1.41"
 hickory-resolver = { version = ">=0.25.0-alpha.5", package = "hickory-resolver" }
 time = { version = ">=0.3.39", package = "time" }
+
+[dependencies.tikv-jemallocator]
+version = "0.6"
+optional = true
+
+[features]
+jemalloc = ["tikv-jemallocator"]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+debug = false
+
+[profile.dev]
+opt-level = 1
+lto = false
+debug = true

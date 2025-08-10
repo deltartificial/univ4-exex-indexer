@@ -7,7 +7,8 @@ pub async fn connect_to_clickhouse() -> eyre::Result<Client> {
     
     let client = Client::default()
         .with_url(database_url)
-        .with_database(database_name);
+        .with_database(database_name)
+        .with_option("compression", "lz4");
     
     Ok(client)
 }

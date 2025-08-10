@@ -3,6 +3,9 @@ mod indexer;
 mod processors;
 mod schema;
 mod storage;
+#[cfg(feature = "jemalloc")]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 use utils::connect_to_clickhouse;
 use storage::init_tables;
 use indexer::{Indexer, EthereumBlockData};

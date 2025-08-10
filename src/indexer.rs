@@ -125,7 +125,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
             let table = get_table(processor.table_name)
                 .expect(&format!("Table definition not found for {}", processor.table_name));
 
-            let writer = DbWriter::new(client, table).await?;
+            let writer = DbWriter::new(client, table)?;
 
             if let Err(e) = writer.revert(block_numbers).await {
                 warn!("Failed to revert {} for blocks: {}", processor.table_name, e);
@@ -206,7 +206,7 @@ impl<Node: FullNodeComponents, EthApi: FullEthApi> Indexer<Node, EthApi> {
 
             let task = tokio::spawn(async move {
                 let event_start_time = Instant::now();
-                let mut writer = match DbWriter::new(&components.client, table).await {
+                let mut writer = match DbWriter::new(&components.client, table) {
                     Ok(w) => w,
                     Err(e) => return Err((processor_name, e.to_string()))
                 };
