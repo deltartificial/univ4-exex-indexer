@@ -1,5 +1,3 @@
-use crate::table_definitions::TABLES;
-use reth_tracing::tracing::info;
 use std::env;
 use clickhouse::Client;
 
@@ -16,16 +14,4 @@ pub async fn connect_to_clickhouse() -> eyre::Result<Client> {
     Ok(client)
 }
 
-pub async fn create_tables(client: &Client) -> eyre::Result<()> {
-    for table in TABLES.iter() {
-        let create_table_sql = table.create_table_sql();
-        client.query(&create_table_sql).execute().await?;
-
-        for index_sql in table.create_index_statements() {
-            client.query(&index_sql).execute().await?;
-        }
-    }
-
-    info!("Initialized database tables");
-    Ok(())
-}
+// no table creation here; handled in storage::init_tables

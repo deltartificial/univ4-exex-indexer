@@ -1,9 +1,10 @@
 mod utils;
 mod indexer;
-mod uni_v4_pools;
-mod table_definitions;
-mod db_writer;
-use utils::{connect_to_clickhouse, create_tables};
+mod processors;
+mod schema;
+mod storage;
+use utils::connect_to_clickhouse;
+use storage::init_tables;
 use indexer::{Indexer, EthereumBlockData};
 use eyre::Result;
 use futures::{TryStreamExt};
@@ -89,7 +90,7 @@ fn main() -> Result<()> {
     Cli::parse_args().run(|builder, _| {
         Box::pin(async move {
             let client = Arc::new(connect_to_clickhouse().await?);
-            create_tables(&client).await?;
+            init_tables(&client).await?;
 
             let indexer = Indexer::new();
 

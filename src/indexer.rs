@@ -1,6 +1,6 @@
-use crate::table_definitions::get_table;
-use crate::db_writer::DbWriter;
-use crate::uni_v4_pools::process_uni_v4_pools;
+use crate::schema::get as get_table;
+use crate::storage::writer::ClickhouseWriter as DbWriter;
+use crate::processors::uni_v4_pools::process_uni_v4_pools;
 use alloy_rpc_types::{BlockId, BlockNumberOrTag};
 use alloy_rpc_types_trace::parity::{TraceResultsWithTransactionHash, TraceType};
 use eyre::Result;

@@ -1,6 +1,6 @@
-use crate::record_values;
+use crate::values;
 use crate::indexer::{ProcessingComponents, EthereumBlockData};
-use crate::db_writer::DbWriter;
+use crate::storage::writer::ClickhouseWriter as DbWriter;
 use alloy::{sol, sol_types::SolEvent, primitives::{address, Address}};
 use reth_node_api::FullNodeComponents;
 use eyre::Result;
@@ -42,7 +42,7 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                 match Initialize::decode_raw_log(log.topics(), &log.data.data) {
                     Ok(create) => {
                         writer
-                            .write_record(record_values![
+                            .write_record(values![
                             block_number as i64,
                             tx.hash(),
                             tx_idx as i64,
