@@ -16,8 +16,8 @@ model UniV4Pools {
   log_index              Int
   log_address            String   @db.Char(42)
   pool_id                String   @db.Char(66)
-  currency0              String
-  currency1              String
+  currency0              String   @db.Char(42)
+  currency1              String   @db.Char(42)
   fee                    Int
   tick_spacing           Int
   hooks_address          String   @db.Char(42)
@@ -25,8 +25,10 @@ model UniV4Pools {
   initial_tick           Int
 
   @@id([chain_id, block_number, transaction_index, log_index])
+  @@unique([chain_id, pool_id])
   @@index([pool_id, block_timestamp])
   @@index([chain_id, block_timestamp])
+  @@index([transaction_hash])
   @@map("uni_v4_pools")
 }
 
@@ -51,6 +53,8 @@ model UniV4Swaps {
   @@id([chain_id, block_number, transaction_index, log_index])
   @@index([pool_id, block_timestamp])
   @@index([sender, block_timestamp])
+  @@index([chain_id, pool_id, block_number])
+  @@index([transaction_hash])
   @@unique([transaction_hash, log_index])
   @@map("uni_v4_swaps")
 }
@@ -74,6 +78,8 @@ model UniV4ModifyLiquidity {
   @@id([chain_id, block_number, transaction_index, log_index])
   @@index([pool_id, block_timestamp])
   @@index([sender, block_timestamp])
+  @@index([chain_id, pool_id, block_number])
+  @@index([transaction_hash])
   @@unique([transaction_hash, log_index])
   @@map("uni_v4_modify_liquidity")
 }
@@ -95,6 +101,8 @@ model UniV4Donations {
   @@id([chain_id, block_number, transaction_index, log_index])
   @@index([pool_id, block_timestamp])
   @@index([sender, block_timestamp])
+  @@index([chain_id, pool_id, block_number])
+  @@index([transaction_hash])
   @@unique([transaction_hash, log_index])
   @@map("uni_v4_donations")
 }
