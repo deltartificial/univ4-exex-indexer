@@ -3,6 +3,7 @@ pub struct Table {
     pub name: &'static str,
     pub columns: Vec<Column>,
     pub indexes: Vec<&'static str>,
+    pub partition_by: Option<&'static str>,
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +28,15 @@ impl Table {
                 "REAL" => "Float32",
                 "TIMESTAMP WITH TIME ZONE" | "TIMESTAMP" => "DateTime",
                 "DATE" => "Date",
+                // Pass-through for common ClickHouse-native types
+                "UInt32" => "UInt32",
+                "UInt64" => "UInt64",
+                "Int32" => "Int32",
+                "Int64" => "Int64",
+                "FixedString(66)" => "FixedString(66)",
+                "FixedString(40)" => "FixedString(40)",
+                "DateTime64(3, 'UTC')" => "DateTime64(3, 'UTC')",
+                "Decimal(38,0)" => "Decimal(38, 0)",
                 _ => "String",
             };
             let nullable = if col.nullable { format!("Nullable({})", clickhouse_type) } else { clickhouse_type.to_string() };
@@ -44,10 +54,15 @@ impl Table {
             primary_key_cols.join(", ")
         };
 
-        let engine = format!(
-            "ENGINE = MergeTree() ORDER BY ({}) SETTINGS index_granularity = 8192, compress = 'LZ4'",
+        let mut engine = String::new();
+        engine.push_str("ENGINE = MergeTree() ");
+        if let Some(partition) = self.partition_by {
+            engine.push_str(&format!("PARTITION BY {} ", partition));
+        }
+        engine.push_str(&format!(
+            "ORDER BY ({}) SETTINGS index_granularity = 8192, compress = 'LZ4'",
             order_by
-        );
+        ));
 
         format!(
             "CREATE TABLE IF NOT EXISTS {} (\n    {}\n) {}",

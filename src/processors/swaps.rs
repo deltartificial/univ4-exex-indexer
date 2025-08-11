@@ -4,11 +4,12 @@ use crate::storage::writer::ClickhouseWriter as DbWriter;
 use alloy::{sol, sol_types::SolEvent, primitives::{address, Address}};
 use reth_node_api::FullNodeComponents;
 use eyre::Result;
-use chrono::Utc;
+use chrono::{Utc, TimeZone};
 use reth_rpc_eth_api::helpers::FullEthApi;
 use tracing::debug;
 
 const UNIV4_FACTORY_CONTRACT_ADDRESS: Address = address!("0x000000000004444c5dc75cB358380D2e3dE08A90");
+const CHAIN_ID: u32 = 1;
 
 sol! {
     event Swap(
@@ -31,8 +32,8 @@ pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
     let block = &block_data.0;
     let receipts = &block_data.1;
     let block_number = block.num_hash().number;
+    let block_timestamp = Utc.timestamp_opt(block.timestamp as i64, 0).single().unwrap_or_else(Utc::now);
 
-    let now = Utc::now();
     for (tx_idx, (tx, receipt)) in block.body().transactions.iter().zip(receipts.iter()).enumerate() {
         for (log_idx, log) in receipt.logs.iter().enumerate() {
             if log.address != UNIV4_FACTORY_CONTRACT_ADDRESS { continue; }
@@ -40,12 +41,16 @@ pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
 
             match Swap::decode_raw_log(log.topics(), &log.data.data) {
                 Ok(evt) => {
+                    let event_id = format!("{}#{}", tx.hash(), log_idx);
                     writer.write_record(values![
+                        CHAIN_ID as i64,
                         block_number as i64,
+                        block_timestamp,
                         tx.hash(),
                         tx_idx as i64,
                         log_idx as i64,
                         log.address,
+                        event_id,
                         evt.id,
                         evt.sender,
                         evt.amount0,
@@ -54,7 +59,6 @@ pub async fn process_uni_v4_swaps<Node: FullNodeComponents, EthApi: FullEthApi>(
                         evt.liquidity,
                         evt.tick,
                         evt.fee,
-                        now,
                     ]);
                 }
                 Err(e) => { debug!("Failed to decode univ4 swap event: {:?}", e); }

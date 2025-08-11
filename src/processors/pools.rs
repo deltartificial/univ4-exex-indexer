@@ -4,11 +4,12 @@ use crate::storage::writer::ClickhouseWriter as DbWriter;
 use alloy::{sol, sol_types::SolEvent, primitives::{address, Address}};
 use reth_node_api::FullNodeComponents;
 use eyre::Result;
-use chrono::Utc;
+use chrono::{Utc, TimeZone};
 use reth_rpc_eth_api::helpers::FullEthApi;
 use tracing::debug;
 
 const UNIV4_FACTORY_CONTRACT_ADDRESS: Address = address!("0x000000000004444c5dc75cB358380D2e3dE08A90");
+const CHAIN_ID: u32 = 1;
 
 sol! {
     event Initialize(
@@ -55,8 +56,7 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
     let block = &block_data.0;
     let receipts = &block_data.1;
     let block_number = block.num_hash().number;
-
-    let now = Utc::now();
+    let block_timestamp = Utc.timestamp_opt(block.timestamp as i64, 0).single().unwrap_or_else(Utc::now);
 
     for (tx_idx, (tx, receipt)) in block.body().transactions.iter().zip(receipts.iter()).enumerate() {
         for (log_idx, log) in receipt.logs.iter().enumerate() {
@@ -67,7 +67,9 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                     Ok(create) => {
                         writer
                             .write_record(values![
+                                CHAIN_ID as i64,
                                 block_number as i64,
+                                block_timestamp,
                                 tx.hash(),
                                 tx_idx as i64,
                                 log_idx as i64,
@@ -80,7 +82,6 @@ pub async fn process_uni_v4_pools<Node: FullNodeComponents, EthApi: FullEthApi>(
                                 create.hooks,
                                 create.sqrtPriceX96,
                                 create.tick,
-                                now,
                             ]);
                     }
                     Err(e) => { debug!("Failed to decode univ4 pool creation event: {:?}", e); }
