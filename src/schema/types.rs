@@ -28,7 +28,6 @@ impl Table {
                 "REAL" => "Float32",
                 "TIMESTAMP WITH TIME ZONE" | "TIMESTAMP" => "DateTime",
                 "DATE" => "Date",
-                // Pass-through for common ClickHouse-native types
                 "UInt32" => "UInt32",
                 "UInt64" => "UInt64",
                 "Int32" => "Int32",

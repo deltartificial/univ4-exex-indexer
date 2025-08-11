@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UniV4Pools {
+  chain_id               Int
+  block_number           BigInt
+  block_timestamp        DateTime @db.Timestamptz(3)
+  transaction_hash       String   @db.Char(66)
+  transaction_index      Int
+  log_index              Int
+  log_address            String   @db.Char(42)
+  pool_id                String   @db.Char(66)
+  currency0              String
+  currency1              String
+  fee                    Int
+  tick_spacing           Int
+  hooks_address          String   @db.Char(42)
+  initial_sqrt_price_x96 Decimal  @db.Numeric
+  initial_tick           Int
+
+  @@id([chain_id, block_number, transaction_index, log_index])
+  @@index([pool_id, block_timestamp])
+  @@index([chain_id, block_timestamp])
+  @@map("uni_v4_pools")
+}
+
+model UniV4Swaps {
+  chain_id          Int
+  block_number      BigInt
+  block_timestamp   DateTime @db.Timestamptz(3)
+  transaction_hash  String   @db.Char(66)
+  transaction_index Int
+  log_index         Int
+  log_address       String   @db.Char(42)
+  event_id          String   @unique
+  pool_id           String   @db.Char(66)
+  sender            String   @db.Char(42)
+  amount0           Decimal  @db.Numeric
+  amount1           Decimal  @db.Numeric
+  sqrt_price_x96    Decimal  @db.Numeric
+  liquidity         Decimal  @db.Numeric
+  tick              Int
+  fee               Int
+
+  @@id([chain_id, block_number, transaction_index, log_index])
+  @@index([pool_id, block_timestamp])
+  @@index([sender, block_timestamp])
+  @@unique([transaction_hash, log_index])
+  @@map("uni_v4_swaps")
+}
+
+model UniV4ModifyLiquidity {
+  chain_id          Int
+  block_number      BigInt
+  block_timestamp   DateTime @db.Timestamptz(3)
+  transaction_hash  String   @db.Char(66)
+  transaction_index Int
+  log_index         Int
+  log_address       String   @db.Char(42)
+  event_id          String   @unique
+  pool_id           String   @db.Char(66)
+  sender            String   @db.Char(42)
+  tick_lower        Int
+  tick_upper        Int
+  liquidity_delta   Decimal  @db.Numeric
+  position_salt     String   @db.Char(66)
+
+  @@id([chain_id, block_number, transaction_index, log_index])
+  @@index([pool_id, block_timestamp])
+  @@index([sender, block_timestamp])
+  @@unique([transaction_hash, log_index])
+  @@map("uni_v4_modify_liquidity")
+}
+
+model UniV4Donations {
+  chain_id          Int
+  block_number      BigInt
+  block_timestamp   DateTime @db.Timestamptz(3)
+  transaction_hash  String   @db.Char(66)
+  transaction_index Int
+  log_index         Int
+  log_address       String   @db.Char(42)
+  event_id          String   @unique
+  pool_id           String   @db.Char(66)
+  sender            String   @db.Char(42)
+  amount0           Decimal  @db.Numeric
+  amount1           Decimal  @db.Numeric
+
+  @@id([chain_id, block_number, transaction_index, log_index])
+  @@index([pool_id, block_timestamp])
+  @@index([sender, block_timestamp])
+  @@unique([transaction_hash, log_index])
+  @@map("uni_v4_donations")
+}
+
